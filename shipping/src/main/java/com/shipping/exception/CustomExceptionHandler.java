@@ -1,7 +1,10 @@
 package com.shipping.exception;
 
+import java.util.MissingFormatArgumentException;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingRequestValueException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver;
@@ -21,5 +24,10 @@ public class CustomExceptionHandler extends DefaultHandlerExceptionResolver{
 	public ResponseEntity<Object> exception(IllegalArgumentException ex){
 		ex.printStackTrace();
 		return new ResponseEntity<>("Enter correct arguments: "+ex.getLocalizedMessage(),HttpStatus.BAD_REQUEST);
+	}
+	@ExceptionHandler(value=MissingRequestValueException.class)
+	public ResponseEntity<Object> exception(MissingRequestValueException ex){
+		ex.printStackTrace();
+		return new ResponseEntity<>("Missing argument: "+ex.getLocalizedMessage(),HttpStatus.BAD_REQUEST);
 	}
 }

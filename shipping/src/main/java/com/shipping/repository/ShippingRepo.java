@@ -11,6 +11,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.shipping.model.*;
+
+import reactor.core.publisher.Flux;
 @Repository
 public interface ShippingRepo extends JpaRepository<Shipment, Integer>{
 	@Modifying
@@ -40,4 +42,12 @@ public interface ShippingRepo extends JpaRepository<Shipment, Integer>{
 	
 	@Query(value="SELECT * FROM Shipment WHERE shipment_id=?1",nativeQuery=true)
 	public List<Shipment> findAllById(@Param("shipment_id") int shipment_id);
+	
+	@Query(value="SELECT * FROM Shipment WHERE current_status='shipped'",nativeQuery=true)
+	public List<Shipment> filterByShipped();
+	
+	
+	@Query(value="select s from Shipment s join fetch a.branch where a.accountNumber = ?1",nativeQuery=true)
+    public Shipment findAccount(String accountNumber);
+
 }

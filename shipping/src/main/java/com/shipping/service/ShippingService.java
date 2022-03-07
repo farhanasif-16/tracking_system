@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,52 +18,71 @@ import com.shipping.model.Status;
 import com.shipping.repository.ProductRepo;
 import com.shipping.repository.ShippingRepo;
 
+import reactor.core.publisher.Flux;
+
 @Service
 public class ShippingService {
 	@Autowired
-	ShippingRepo repo;
+	ShippingRepo shippingRepo;
 	@Autowired
-	ProductRepo p_repo;
+	ProductRepo productRepo;
 	@Autowired
-	ReturnsService ret;
+	ReturnsService returnService;
 	public Shipment createShipment(Shipment shipment) throws ProductNotFoundException,IllegalArgumentException{
-		if(repo.findByUnique(shipment.getOrder_id(),shipment.getProduct_id())!=null) {
+		if(shippingRepo.findByUnique(shipment.getOrder_id(),shipment.getProduct_id())!=null) {
 			throw new UniqueValidationException("Record already found with given order_id and product_id");
 		}
-		if(!p_repo.existsById(shipment.getProduct_id())) {
+		if(!productRepo.existsById(shipment.getProduct_id())) {
 			throw new ProductNotFoundException("ProductNotFound Exception: Product "+shipment.getProduct_id()+" not found.");
 		}
 		shipment.setCurrent_status(Status.ordered);
 		shipment.setOrdered_date(LocalDate.now());
-		return repo.save(shipment);
+		return shippingRepo.save(shipment);
 	}
-	public Optional<List<Shipment>> getShipment(Optional<Integer> order_id,Optional<Integer> shipment_id)throws IllegalArgumentException{
-
-		if(shipment_id.isEmpty() && order_id.isEmpty()){
-			return Optional.ofNullable(repo.findAll());
+	public Optional<List<Shipment>> getShipment(Optional<String> filter,Optional<Integer> order_id,Optional<Integer> shipment_id)throws IllegalArgumentException{
+		if(filter.isPresent()) {
+			return filterShipment(filter);
+		}
+		if(shipment_id.isEmpty()&&order_id.isEmpty()){
+			return Optional.ofNullable(shippingRepo.findAll());
 		}
 		else if(shipment_id.isPresent()){
-			return Optional.ofNullable(repo.findAllById(shipment_id.get()));
+			return Optional.ofNullable(shippingRepo.findAllById(shipment_id.get()));
 		}
 		else {
-			return Optional.ofNullable(repo.findByOrderId(order_id.get()));
+			return Optional.ofNullable(shippingRepo.findByOrderId(order_id.get()));
 		}
+	}
+	Optional<List<Shipment>> filterShipment(Optional<String> filter){
+		if(filter.get().equals("shipped")) {
+			return Optional.ofNullable(filterByShipped());
+		}
+		else if(filter.get().equals("ordered")) {
+			return Optional.ofNullable(filterByOrdered());
+		}
+		else if(filter.get().equals("intransit")) {
+			return Optional.ofNullable(filterByIntransit());
+		}
+		else if(filter.get().equals("delivered")) {
+			return Optional.ofNullable(filterByDelivered());
+		}
+		return null;
 	}
 	public Optional<Shipment> updateShipment(Status current_status,LocalDate current_date,Integer shipment_id)throws IllegalArgumentException{
 		if(current_status.toString().equals("delivered")) {
-			repo.updateDelivery(current_date,shipment_id);
+			shippingRepo.updateDelivery(current_date,shipment_id);
 		}
 		else if(current_status.toString().equals("shipped")) {
-			repo.updateShipped(current_date,shipment_id);
+			shippingRepo.updateShipped(current_date,shipment_id);
 		}
 		else if(current_status.toString().equals("intransit")) {
-			repo.updateIntransit(current_date,shipment_id);
+			shippingRepo.updateIntransit(current_date,shipment_id);
 		}
-		return repo.findById(shipment_id);
+		return shippingRepo.findById(shipment_id);
 	}
 	public Integer deleteShipment(Integer shipment_id)throws IllegalArgumentException {
 		if(isCancellable(shipment_id)) {
-			repo.deleteById(shipment_id);
+			shippingRepo.deleteById(shipment_id);
 			return shipment_id;
 		}
 		else {
@@ -70,14 +90,41 @@ public class ShippingService {
 		}
 	}
 	
+	public List<Shipment> filterByShipped(){
+		List<Shipment> all=shippingRepo.findAll();
+		return all.stream()
+				.filter(shipment->shipment.getCurrent_status().toString().equals("shipped"))
+				.collect(Collectors.toList());
+	}
+	
+	public List<Shipment> filterByIntransit(){
+		List<Shipment> all=shippingRepo.findAll();
+		return all.stream()
+				.filter(shipment->shipment.getCurrent_status().toString().equals("intransit"))
+				.collect(Collectors.toList());
+	}
 	
 	
-	public boolean isCancellable(int shipment_id)throws P{
-		Shipment shipment=repo.getById(shipment_id);
+	public List<Shipment> filterByDelivered(){
+		List<Shipment> all=shippingRepo.findAll();
+		return all.stream()
+				.filter(shipment->shipment.getCurrent_status().toString().equals("delivered"))
+				.collect(Collectors.toList());
+	}
+	
+	public List<Shipment> filterByOrdered(){
+		List<Shipment> all=shippingRepo.findAll();
+		return all.stream()
+				.filter(shipment->shipment.getCurrent_status().toString().equals("ordered"))
+				.collect(Collectors.toList());
+	}
+	
+	public boolean isCancellable(int shipment_id){
+		Shipment shipment=shippingRepo.getById(shipment_id);
 		if(shipment.equals(null))
 			return false;
 		if(shipment.getCurrent_status().toString().equals("Delivered")) {
-			Product curr=p_repo.getById(shipment.getProduct_id());
+			Product curr=productRepo.getById(shipment.getProduct_id());
 			if(curr.getReturn_period()<ChronoUnit.DAYS.between(shipment.getDelivered_date(),LocalDate.now())) {
 				return false;
 			}

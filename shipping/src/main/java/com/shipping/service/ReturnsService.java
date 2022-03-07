@@ -66,16 +66,13 @@ public class ReturnsService {
 		return returns;
 	}
 	public boolean isReturnable(Shipment shipment) {
-		if(!shipment.getCurrent_status().toString().equals("delivered")) {
+		if(shipment.getCurrent_status()!=Status.delivered) {
 			return false;
 		}
 		Product curr=p_repo.getById(shipment.getProduct_id());
-		if(curr.getReturn_period()<ChronoUnit.DAYS.between(shipment.getDelivered_date(),LocalDate.now())) {
+		if(curr.getReturn_period() < ChronoUnit.DAYS.between(shipment.getDelivered_date(),LocalDate.now())) {
 			return false;
 		}
 		return true;
 	}
-//	public Return updateReturn(int return_id,String current_status,LocalDate current_date) {
-//		
-//	}
 }
