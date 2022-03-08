@@ -34,30 +34,30 @@ public class ShippingController{
 	@Autowired
 	ShippingRepo shippingRepo;
 	@Autowired
-	ShippingService shippingService;
+	ShippingService shipping_service;
 	@Autowired
 	ProductRepo productRepo;
 	@Autowired
-	ReturnsService returnService;
+	ReturnsService ret;
 	@PostMapping("/tracking_system/shipment")//return the object added to the database
-	public Shipment createRecord(Shipment shipment) throws UniqueValidationException,ProductNotFoundException,IllegalArgumentException{
-		return shippingService.createShipment(shipment);
+	public Shipment createRecord(@RequestParam("order_id") int order_id,@RequestParam("product_id") int product_id) throws UniqueValidationException,ProductNotFoundException,IllegalArgumentException{
+		return shipping_service.createShipment(order_id,product_id);
 	}
 	
 	
 	@GetMapping(value="/tracking_system/shipment")
 	public Optional<List<Shipment>> getRecords(@RequestParam("fn") Optional<String> filter,@RequestParam("order_id") Optional<Integer> order_id,@RequestParam("shipment_id") Optional<Integer> shipment_id)throws IllegalArgumentException,NumberFormatException{
-		return shippingService.getShipment(filter,order_id,shipment_id);
+		return shipping_service.getShipment(filter,order_id,shipment_id);
 	}
 	
 	@PatchMapping("/tracking_system/shipment")//update status and date of happening  and return that shipment object
 	public Optional<Shipment> updateRecord(@RequestParam("current_status") Status current_status,@RequestParam("shipment_id") int shipment_id) throws IllegalArgumentException,ProductNotFoundException {
-		return shippingService.updateShipment(current_status,LocalDate.now(), shipment_id);
+		return shipping_service.updateShipment(current_status,LocalDate.now(), shipment_id);
 	}
 	
 	
 	@DeleteMapping("/tracking_system/shipment")//delete and return shipment id else return null
 	public Integer cancleShipment(@RequestParam("shipment_id") int shipment_id)throws IllegalArgumentException,ProductNotFoundException{
-		return shippingService.deleteShipment(shipment_id);
+		return shipping_service.deleteShipment(shipment_id);
 	}
 }

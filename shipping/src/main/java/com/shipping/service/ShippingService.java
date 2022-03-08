@@ -11,14 +11,12 @@ import org.springframework.stereotype.Service;
 
 import com.shipping.exception.ProductNotFoundException;
 import com.shipping.exception.UniqueValidationException;
-import com.shipping.model.Filter;
 import com.shipping.model.Product;
 import com.shipping.model.Shipment;
 import com.shipping.model.Status;
 import com.shipping.repository.ProductRepo;
 import com.shipping.repository.ShippingRepo;
 
-import reactor.core.publisher.Flux;
 
 @Service
 public class ShippingService {
@@ -28,7 +26,10 @@ public class ShippingService {
 	ProductRepo productRepo;
 	@Autowired
 	ReturnsService returnService;
-	public Shipment createShipment(Shipment shipment) throws ProductNotFoundException,IllegalArgumentException{
+	public Shipment createShipment(int order_id,int product_id) throws ProductNotFoundException,IllegalArgumentException{
+		Shipment shipment=new Shipment();
+		shipment.setOrder_id(order_id);
+		shipment.setProduct_id(product_id);
 		if(shippingRepo.findByUnique(shipment.getOrder_id(),shipment.getProduct_id())!=null) {
 			throw new UniqueValidationException("Record already found with given order_id and product_id");
 		}

@@ -45,9 +45,4 @@ public interface ShippingRepo extends JpaRepository<Shipment, Integer>{
 	
 	@Query(value="SELECT * FROM Shipment WHERE current_status='shipped'",nativeQuery=true)
 	public List<Shipment> filterByShipped();
-	
-	
-	@Query(value="select s from Shipment s join fetch a.branch where a.accountNumber = ?1",nativeQuery=true)
-    public Shipment findAccount(String accountNumber);
-
 }
